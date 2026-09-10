@@ -1,0 +1,26 @@
+name: aws-labs
+
+version: '3'
+
+services:
+  localstack:
+    container_name: localstack2
+    image: localstack/localstack:4.14.0
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    hostname: localstack
+    network_mode: bridge
+    ports:
+      - '4566-4599:4566-4599'
+      - '8080:8080'
+    environment:
+      - SERVICES=${SERVICES}
+      - AWS_DEFAULT_REGION=sa-east-1
+      - AWS_ACCESS_KEY_ID=1234
+      - AWS_SECRET_ACCESS_KEY=1234
+      - DEBUG=1
+      - NO_PROXY=localhost
+      - DYNAMODB_SHARE_DB=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - './volume:/var/lib/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
