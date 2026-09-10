@@ -11,15 +11,16 @@ kinesis = boto3.client(
     aws_secret_access_key='1234'
 )
 
-def deletar_stream():
+
+def delete_stream():
     try:
         kinesis.delete_stream(StreamName=STREAM_NAME)
     except kinesis.exceptions.ResourceNotFoundException:
-        print(f'A stream {STREAM_NAME!r} nao foi encontrada.')
+        print(f'Stream {STREAM_NAME!r} was not found.')
         return
 
-    print(f'Stream {STREAM_NAME!r} excluida com sucesso.')
+    print(f'Stream {STREAM_NAME!r} deleted successfully.')
 
 
 if __name__ == '__main__':
-    deletar_stream()
+    delete_stream()

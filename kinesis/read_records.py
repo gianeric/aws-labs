@@ -11,69 +11,72 @@ kinesis = boto3.client(
     aws_secret_access_key='1234'
 )
 
-def ler_shard(shard_id):
-    resposta = kinesis.get_shard_iterator(
+
+def read_shard(shard_id):
+    response = kinesis.get_shard_iterator(
         StreamName=STREAM_NAME,
         ShardId=shard_id,
         ShardIteratorType='TRIM_HORIZON'
     )
 
-    registros = kinesis.get_records(
-        ShardIterator=resposta['ShardIterator']
+    records = kinesis.get_records(
+        ShardIterator=response['ShardIterator']
     )['Records']
 
-    return registros
+    return records
 
-def listar_shards():
-    resposta = kinesis.list_shards(StreamName=STREAM_NAME)
-    return resposta.get('Shards', [])
 
-def ler_stream():
+def list_shards():
+    response = kinesis.list_shards(StreamName=STREAM_NAME)
+    return response.get('Shards', [])
+
+
+def read_stream():
     print(f'\nStream: {STREAM_NAME}')
-    print('Buscando shards...')
+    print('Searching for shards...')
 
     try:
-        shards = listar_shards()
+        shards = list_shards()
     except kinesis.exceptions.ResourceNotFoundException:
-        raise SystemExit(f'A stream {STREAM_NAME!r} nao foi encontrada.')
+        raise SystemExit(f'Stream {STREAM_NAME!r} was not found.')
 
     if not shards:
-        raise SystemExit('A stream existe, mas ainda nao possui shards.')
+        raise SystemExit('The stream exists, but it does not have shards yet.')
 
-    print(f'{len(shards)} shard(s) encontrado(s).\n')
+    print(f'{len(shards)} shard(s) found.\n')
 
-    registros_da_stream = []
+    stream_records = []
     for shard in shards:
-        shard_id = shard['ShardId'] #ex: shardId-000000000001 | shardId-000000000002
-        registros = ler_shard(shard_id)
+        shard_id = shard['ShardId']  # e.g. shardId-000000000001 | shardId-000000000002
+        records = read_shard(shard_id)
 
-        for registro in registros:
-            registros_da_stream.append({
+        for record in records:
+            stream_records.append({
                 'shard_id': shard_id,
-                'registro': registro,
+                'record': record,
             })
 
-    registros_da_stream.sort(
-        key=lambda item: item['registro']['ApproximateArrivalTimestamp']
+    stream_records.sort(
+        key=lambda item: item['record']['ApproximateArrivalTimestamp']
     )
 
-    if not registros_da_stream:
-        print('Nenhum registro encontrado.')
+    if not stream_records:
+        print('No records found.')
     else:
-        print('Registros ordenados por horario de chegada:\n')
-        for item in registros_da_stream:
-            registro = item['registro']
-            mensagem = registro['Data'].decode('utf-8')
-            chegada = registro['ApproximateArrivalTimestamp']
-            print(f'[{item["shard_id"]}] {chegada.isoformat()}')
-            print(f'  Usuario: {registro["PartitionKey"]}')
-            print(f'  Mensagem: {mensagem}\n')
+        print('Records ordered by arrival time:\n')
+        for item in stream_records:
+            record = item['record']
+            message = record['Data'].decode('utf-8')
+            arrival_time = record['ApproximateArrivalTimestamp']
+            print(f'[{item["shard_id"]}] {arrival_time.isoformat()}')
+            print(f'  User: {record["PartitionKey"]}')
+            print(f'  Message: {message}\n')
 
     print(
-        f'Leitura concluida: {len(registros_da_stream)} '
-        'registro(s) encontrado(s).'
+        f'Reading complete: {len(stream_records)} '
+        'record(s) found.'
     )
 
 
 if __name__ == '__main__':
-    ler_stream()
+    read_stream()
